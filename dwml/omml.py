@@ -4,7 +4,8 @@
 Office Math Markup Language (OMML)
 """
 
-from pylatexenc.latexencode import unicode_to_latex
+# from pylatexenc.latexencode import unicode_to_latex
+from pylatexenc.latexencode import UnicodeToLatexEncoder
 
 from dwml import ET, NotSupport
 from dwml.utils import PY2
@@ -180,6 +181,11 @@ class oMath2Latex(Tag2Method):
     _t_dict = T
 
     __direct_tags = ("box", "sSub", "sSup", "sSubSup", "num", "den", "deg", "e")
+    u = UnicodeToLatexEncoder(
+        replacement_latex_protection="braces-all",
+        unknown_char_policy="keep",
+        unknown_char_warning=False,
+    )
 
     def __init__(self, element):
         self._latex = self.process_children(element)
@@ -371,6 +377,38 @@ class oMath2Latex(Tag2Method):
                 res.append(t)
         return bo + BLANK.join(res)
 
+    def process_unicode(self, s):
+        # s = s if isinstance(s,unicode) else unicode(s,'utf-8')
+        # print(s, self._t_dict.get(s, s), unicode_to_latex(s))
+        # _str.append( self._t_dict.get(s, s) )
+
+        out_latex_str = self.u.unicode_to_latex(s)
+
+        # print(s, out_latex_str)
+
+        if (
+            s.startswith("{") is False
+            and out_latex_str.startswith("{")
+            and s.endswith("}") is False
+            and out_latex_str.endswith("}")
+        ):
+            out_latex_str = f" {out_latex_str[1:-1]} "
+
+        # print(s, out_latex_str)
+
+        if "ensuremath" in out_latex_str:
+            out_latex_str = out_latex_str.replace("\\ensuremath{", " ")
+            out_latex_str = out_latex_str.replace("}", " ")
+
+        # print(s, out_latex_str)
+
+        if out_latex_str.strip().startswith("\\text"):
+            out_latex_str = f" \\text{{{out_latex_str}}} "
+
+        # print(s, out_latex_str)
+
+        return out_latex_str
+
     def do_r(self, elm):
         """
         Get text from 'r' element,And try convert them to latex symbols
@@ -378,16 +416,22 @@ class oMath2Latex(Tag2Method):
         @todo \text (latex pure text support)
         """
         _str = []
+        _base_str = []
         for s in elm.findtext("./{0}t".format(OMML_NS)):
-            # s = s if isinstance(s,unicode) else unicode(s,'utf-8')
-            # print(s, self._t_dict.get(s, s), unicode_to_latex(s))
-            # _str.append( self._t_dict.get(s, s) )
-            out_latex_str = unicode_to_latex(s)
-            if "ensuremath" in out_latex_str:
-                out_latex_str = out_latex_str.replace("\ensuremath{", " ")
-                out_latex_str = out_latex_str.replace("}", " ")
+            out_latex_str = self.process_unicode(s)
             _str.append(out_latex_str)
-        return escape_latex(BLANK.join(_str))
+            _base_str.append(s)
+
+        proc_str = escape_latex(BLANK.join(_str))
+        base_proc_str = BLANK.join(_base_str)
+
+        if "{" not in base_proc_str and "\\{" in proc_str:
+            proc_str = proc_str.replace("\\{", "{")
+
+        if "}" not in base_proc_str and "\\}" in proc_str:
+            proc_str = proc_str.replace("\\}", "}")
+
+        return proc_str
 
     tag2meth = {
         "acc": do_acc,

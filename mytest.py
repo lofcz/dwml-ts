@@ -1,3 +1,4 @@
+import zipfile
 import lxml.etree as ET
 from dwml.omml import oMath2Latex
 
@@ -5,23 +6,33 @@ repl = "{0}"
 
 OMML_NS = "{http://schemas.openxmlformats.org/officeDocument/2006/math}"
 
-docx_xml_path = "/data/wordscape_v2/test/document.xml"
+# docx_xml_path = "/data/wordscape_v2/test/document.xml"
+# docx_xml_path = "document2.xml"
 
-with open(docx_xml_path, "rb") as xml_file:
-    xml = xml_file.read()
+# with open(docx_xml_path, "rb") as xml_file:
+#     xml = xml_file.read()
+
+# docx_filename = "/data/wordscape_v2/000000000000000000000000/download/CC-MAIN-2016-50/doc_equation.docx"
+docx_filename = "equation.docx"
+zf = zipfile.ZipFile(docx_filename, mode="a")
+xml = zf.open("word/document.xml").read()
 
 # print(xml)
 root = ET.fromstring(xml)
 # print(root)
 # print(root.tag)
 # print(root.find("*"))
+counter = 0
 for child in root.iter():
     if "MathPara" not in child.tag:
         continue
     for child2 in child:
         if "Math" not in child2.tag:
             continue
-        print(oMath2Latex(child2))
+        counter += 1
+        # if counter not in [4, 5]:
+        #     continue
+        print(str(oMath2Latex(child2)))
         # print(child2.tag)
 # for omath in root.findall("*Math*"):
 # print(omath.tag)
