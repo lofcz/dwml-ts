@@ -11,7 +11,7 @@
  * without a DOM and without re-parsing.
  */
 
-import type { TNode } from 'txml';
+import type { TNode } from 'txml/txml';
 import { unicodeToLatex } from './latex-encode';
 import {
   CHARS,
@@ -22,10 +22,13 @@ import {
   POS_DEFAULT,
   F,
   F_DEFAULT,
+  F_SMALL,
   T,
   FUNC,
   D,
   D_DEFAULT,
+  BORDER_BOX,
+  PHANT,
   RAD,
   RAD_DEFAULT,
   ARR,
@@ -33,6 +36,7 @@ import {
   LIM_TO,
   LIM_UPP,
   M,
+  M_JC,
   BRK,
   BLANK,
   BACKSLASH,
@@ -151,8 +155,32 @@ function getVal(
 
 type ProcessedChild = { stag: string; value: unknown; node: TNode };
 
+/**
+ * Interpret an ST_OnOff value (§7.1.3.9). OMML emits `on`/`off` or `1`/`0`.
+ * `undefined` means "not specified" and returns `def`.
+ */
+function isOn(val: string | undefined, def = false): boolean {
+  if (val === undefined) return def;
+  const v = val.toLowerCase();
+  return v === 'on' || v === '1' || v === 'true';
+}
+
 /** Value tags that contribute to a `*Pr` element's attribute dictionary. */
-const PR_VAL_TAGS = new Set(['chr', 'pos', 'begChr', 'endChr', 'type']);
+const PR_VAL_TAGS = new Set([
+  'chr',
+  'pos',
+  'begChr',
+  'endChr',
+  'sepChr',
+  'type',
+  'show',
+  'smallFrac',
+  'limLoc',
+  'intLim',
+  'naryLim',
+  'mcJc',
+  'degHide',
+]);
 
 /** Property element (`accPr`, `dPr`, `barPr`, ...) — attributes + inner text. */
 class Pr {
@@ -189,8 +217,25 @@ function getAttr(node: TNode, attrLocal: string): string | undefined {
   return undefined;
 }
 
-const DIRECT_TAGS = new Set(['box', 'sSub', 'sSup', 'sSubSup', 'num', 'den', 'deg', 'e']);
+/**
+ * Depth-first search for the first descendant element with the given local
+ * name, returning its `attrLocal` attribute value. Used for nested property
+ * paths like mPr>mcs>mc>mcPr>mcJc that `Pr` (direct children only) can't reach.
+ */
+function findDescendantAttr(node: TNode, elemLocal: string, attrLocal: string): string | undefined {
+  for (const child of node.children) {
+    if (!isElement(child)) continue;
+    if (localName(child.tagName) === elemLocal) {
+      const v = getAttr(child, attrLocal);
+      if (v !== undefined) return v;
+    }
+    const deep = findDescendantAttr(child, elemLocal, attrLocal);
+    if (deep !== undefined) return deep;
+  }
+  return undefined;
+}
 
+const DIRECT_TAGS = new Set(['box', 'sSub', 'sSup', 'sSubSup', 'num', 'den', 'deg', 'e']);
 class Converter {
   private unsupported = new Set<string>();
 
@@ -266,6 +311,9 @@ class Converter {
       case 'm': return this.doM(elm);
       case 'mr': return this.doMr(elm);
       case 'nary': return this.doNary(elm);
+      case 'borderBox': return this.doBorderBox(elm);
+      case 'phant': return this.doPhant(elm);
+      case 'sPre': return this.doSPre(elm);
       default: return null;
     }
   }
@@ -308,7 +356,11 @@ class Converter {
     const nullChar = D_DEFAULT['null']!;
     const sVal = getVal(pr?.get('begChr'), D_DEFAULT['left'], T);
     const eVal = getVal(pr?.get('endChr'), D_DEFAULT['right'], T);
-    const text = (c['e'] as string | undefined) ?? '';
+    const sepVal = getVal(pr?.get('sepChr'), D_DEFAULT['sep'], T);
+    // A delimiter may wrap several base arguments (m:e), joined by sepChr.
+    const bases = this.processChildrenList(elm, new Set(['e'])).map((x) => String(x.value));
+    const sep = sepVal ? escapeLatex(sepVal) : '';
+    const text = bases.join(sep);
     return (
       (pr?.text ?? '') +
       pyFormat(D, [], {
@@ -330,7 +382,11 @@ class Converter {
   private doF(elm: TNode): string {
     const c = this.processChildrenDict(elm);
     const pr = c['fPr'] as Pr | undefined;
-    const latexS = getVal(pr?.get('type'), F_DEFAULT, F) ?? '';
+    let latexS = getVal(pr?.get('type'), F_DEFAULT, F) ?? '';
+    // smallFrac renders the (bar) fraction in inline/text style.
+    if (latexS === F_DEFAULT && isOn(pr?.get('smallFrac'))) {
+      latexS = F_SMALL;
+    }
     const num = (c['num'] as string | undefined) ?? '';
     const den = (c['den'] as string | undefined) ?? '';
     return (pr?.text ?? '') + pyFormat(latexS, [], { num, den });
@@ -412,11 +468,18 @@ class Converter {
 
   private doM(elm: TNode): string {
     const rows: string[] = [];
-    for (const { stag, value } of this.processChildrenList(elm)) {
-      if (stag === 'mPr') continue;
+    let template = M;
+    for (const { stag, value, node } of this.processChildrenList(elm)) {
+      if (stag === 'mPr') {
+        // Column justification lives at mPr>mcs>mc>mcPr>mcJc (per column).
+        // All columns sharing a justification collapse to one array spec.
+        const jc = findDescendantAttr(node, 'mcJc', VAL_SUFFIX);
+        if (jc && M_JC[jc]) template = M_JC[jc]!;
+        continue;
+      }
       if (stag === 'mr') rows.push(String(value));
     }
-    return pyFormat(M, [], { text: rows.join(BRK) });
+    return pyFormat(template, [], { text: rows.join(BRK) });
   }
 
   private doMr(elm: TNode): string {
@@ -426,14 +489,48 @@ class Converter {
   private doNary(elm: TNode): string {
     const res: string[] = [];
     let bo = '';
+    let limLoc = '';
     for (const { stag, value } of this.processChildrenList(elm)) {
       if (stag === 'naryPr') {
-        bo = getVal((value as Pr).get('chr'), undefined, CHR_BO) ?? '';
+        const pr = value as Pr;
+        bo = getVal(pr.get('chr'), undefined, CHR_BO) ?? '';
+        // naryLim (per-object) wins; intLim applies to integrals.
+        limLoc = pr.get('naryLim') ?? pr.get('limLoc') ?? pr.get('intLim') ?? '';
       } else {
         res.push(String(value));
       }
     }
-    return bo + res.join(BLANK);
+    // undOvr -> limits above/below the operator; subSup is the default side
+    // placement already produced by the dispatched _{...}^{...} children.
+    const limits = limLoc === 'undOvr' ? '\\limits' : '';
+    return bo + limits + res.join(BLANK);
+  }
+
+  private doBorderBox(elm: TNode): string {
+    const c = this.processChildrenDict(elm);
+    const e = (c['e'] as string | undefined) ?? '';
+    return pyFormat(BORDER_BOX, [e]);
+  }
+
+  private doPhant(elm: TNode): string {
+    const c = this.processChildrenDict(elm);
+    const pr = c['phantPr'] as Pr | undefined;
+    const e = (c['e'] as string | undefined) ?? '';
+    // Default (show omitted) renders the base visibly; show=off hides it.
+    if (isOn(pr?.get('show'), true)) {
+      return e;
+    }
+    return pyFormat(PHANT, [e]);
+  }
+
+  private doSPre(elm: TNode): string {
+    const c = this.processChildrenDict(elm);
+    const e = (c['e'] as string | undefined) ?? '';
+    // sub/sup arrive already wrapped as _{...} / ^{...} by doSub/doSup;
+    // the prescript form places them against an empty base to the left.
+    const sub = (c['sub'] as string | undefined) ?? '';
+    const sup = (c['sup'] as string | undefined) ?? '';
+    return `{}${sub}${sup}{${e}}`;
   }
 
   /**

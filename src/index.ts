@@ -14,7 +14,9 @@
  * Unknown constructs degrade per-node to concatenated text (never throws).
  */
 
-import { parse, type TNode } from 'txml';
+// Import the parser-only entry: txml's main entry re-exports the Node
+// transform-stream helper, which drags `node:stream` into browser bundles.
+import { parse, type TNode } from 'txml/txml';
 import {
   ommlNodeToLatex,
   localName,

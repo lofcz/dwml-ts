@@ -405,13 +405,29 @@ export const F: Record<string, string> = {
   lin: '{{{num}}}/{{{den}}}',
 };
 export const F_DEFAULT = '\\frac{{{num}}}{{{den}}}';
+/** Small (inline/text-style) fraction per fPr/smallFrac=on. */
+export const F_SMALL = '\\tfrac{{{num}}}{{{den}}}';
 
 export const D = '\\left{left}{text}\\right{right}';
 
 export const D_DEFAULT: Record<string, string> = {
   left: '(',
   right: ')',
+  sep: '|',
   null: '.',
+};
+
+/** Border-box -> boxed content */
+export const BORDER_BOX = '\\boxed{{{0}}}';
+
+/** Phantom: hidden content still occupying space; shown content when show=on. */
+export const PHANT = '\\phantom{{{0}}}';
+
+/** Matrix templates by column justification (mcJc). */
+export const M_JC: Record<string, string> = {
+  left: '\\begin{{array}}{{l}}{text}\\end{{array}}',
+  right: '\\begin{{array}}{{r}}{text}\\end{{array}}',
+  center: '\\begin{{matrix}}{text}\\end{{matrix}}',
 };
 
 export const RAD = '\\sqrt[{deg}]{{{text}}}';

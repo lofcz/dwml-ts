@@ -49,11 +49,11 @@ describe('OMML construct coverage', () => {
     expect(ommlToLatex(xml)).toBe('x_{i}^{2}');
   });
 
-  it('m:sPre degrades without throwing', () => {
+  it('m:sPre pre-sub-superscript renders prescripts left of base', () => {
     const xml = wrap(
-      `<m:sPre><m:e>${r('x')}</m:e><m:sub>${r('i')}</m:sub><m:sup>${r('2')}</m:sup></m:sPre>`,
+      `<m:sPre><m:e>${r('C')}</m:e><m:sub>${r('6')}</m:sub><m:sup>${r('14')}</m:sup></m:sPre>`,
     );
-    expect(() => ommlToLatex(xml)).not.toThrow();
+    expect(ommlToLatex(xml)).toBe('{}_{6}^{14}{C}');
   });
 
   it('m:rad radical with deg', () => {
@@ -165,14 +165,70 @@ describe('OMML construct coverage', () => {
     expect(ommlToLatex(xml)).toBe('x');
   });
 
-  it('m:borderBox degrades without throwing', () => {
+  it('m:borderBox renders a \\boxed border', () => {
     const xml = wrap(`<m:borderBox><m:e>${r('x')}</m:e></m:borderBox>`);
-    expect(() => ommlToLatex(xml)).not.toThrow();
-    expect(ommlToLatex(xml)).toContain('x');
+    expect(ommlToLatex(xml)).toBe('\\boxed{x}');
   });
 
-  it('m:phant degrades without throwing', () => {
+  it('m:phant hides the base (show=off) via \\phantom', () => {
+    const xml = wrap(
+      `<m:phant><m:phantPr><m:show m:val="off"/></m:phantPr><m:e>${r('x')}</m:e></m:phant>`,
+    );
+    expect(ommlToLatex(xml)).toBe('\\phantom{x}');
+  });
+
+  it('m:phant default (show omitted) renders the base visibly', () => {
     const xml = wrap(`<m:phant><m:e>${r('x')}</m:e></m:phant>`);
-    expect(() => ommlToLatex(xml)).not.toThrow();
+    expect(ommlToLatex(xml)).toBe('x');
+  });
+
+  it('m:d multi-base delimiter joins with default sepChr |', () => {
+    const xml = wrap(`<m:d><m:e>${r('a')}</m:e><m:e>${r('b')}</m:e><m:e>${r('c')}</m:e></m:d>`);
+    expect(ommlToLatex(xml)).toBe('\\left(a|b|c\\right)');
+  });
+
+  it('m:d multi-base delimiter honors a custom sepChr', () => {
+    const xml = wrap(
+      `<m:d><m:dPr><m:sepChr m:val=";"/></m:dPr><m:e>${r('a')}</m:e><m:e>${r('b')}</m:e></m:d>`,
+    );
+    expect(ommlToLatex(xml)).toBe('\\left(a;b\\right)');
+  });
+
+  it('m:f smallFrac renders inline/text style fraction', () => {
+    const xml = wrap(
+      `<m:f><m:fPr><m:smallFrac m:val="on"/></m:fPr><m:num>${r('a')}</m:num><m:den>${r('b')}</m:den></m:f>`,
+    );
+    expect(ommlToLatex(xml)).toBe('\\tfrac{a}{b}');
+  });
+
+  it('m:nary limLoc=undOvr places limits above/below the operator', () => {
+    const xml = wrap(
+      `<m:nary><m:naryPr><m:chr m:val="∑"/><m:naryLim m:val="undOvr"/></m:naryPr>` +
+        `<m:sub>${r('i=1')}</m:sub><m:sup>${r('n')}</m:sup><m:e>${r('x')}</m:e></m:nary>`,
+    );
+    expect(ommlToLatex(xml)).toBe('\\sum\\limits_{i=1}^{n}x');
+  });
+
+  it('m:nary default (subSup) keeps side-placed limits', () => {
+    const xml = wrap(
+      `<m:nary><m:naryPr><m:chr m:val="∑"/><m:naryLim m:val="subSup"/></m:naryPr>` +
+        `<m:sub>${r('i=1')}</m:sub><m:sup>${r('n')}</m:sup><m:e>${r('x')}</m:e></m:nary>`,
+    );
+    expect(ommlToLatex(xml)).toBe('\\sum_{i=1}^{n}x');
+  });
+
+  it('m:m matrix column justification mcJc=left', () => {
+    const xml = wrap(
+      `<m:m><m:mPr><m:mcs><m:mc><m:mcPr><m:mcJc m:val="left"/><m:count m:val="2"/></m:mcPr></m:mc></m:mcs></m:mPr>` +
+        `<m:mr><m:e>${r('1')}</m:e><m:e>${r('2')}</m:e></m:mr><m:mr><m:e>${r('3')}</m:e><m:e>${r('4')}</m:e></m:mr></m:m>`,
+    );
+    expect(ommlToLatex(xml)).toBe('\\begin{array}{l}1&2\\\\3&4\\end{array}');
+  });
+
+  it('m:m matrix without justification stays centered', () => {
+    const xml = wrap(
+      `<m:m><m:mr><m:e>${r('1')}</m:e><m:e>${r('2')}</m:e></m:mr></m:m>`,
+    );
+    expect(ommlToLatex(xml)).toBe('\\begin{matrix}1&2\\end{matrix}');
   });
 });
