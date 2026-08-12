@@ -1,0 +1,51 @@
+{
+  "simple.xml": {
+    "ok": true,
+    "latex": [
+      "\\sin(\\sqrt[3]{x})^{x^{11}}/_{b}x_{m}^{n}",
+      "\\tilde{a}\\begin{array}{c}a=b+c\\\\d+e=f\\end{array}\\\\\\underline{cdef}"
+    ]
+  },
+  "group.xml": {
+    "ok": true,
+    "latex": [
+      "  \\mathit{A   \\overbrace{123}\\underbrace{456}=\\left\\{a+b\\right)"
+    ]
+  },
+  "lim.xml": {
+    "ok": true,
+    "latex": [
+      "  \\mathit{A   =log_{  \\mathit{x   }  \\mathit{y   \\max_{0  \\leq    \\mathit{x     \\leq  1}  \\mathit{x     \\mathit{e   ^{  -    \\mathit{x   ^{2}}\\lim_{1 \\text{ \\textrightarrow }   \\infty  }  \\mathit{a   \\overset{def}{=}x"
+    ]
+  },
+  "m.xml": {
+    "ok": true,
+    "latex": [
+      "  \\mathit{A   =\\left(\\begin{matrix}1&2&3\\\\4&5&6\\end{matrix}\\right)\\sum_{1}^{20}x"
+    ]
+  },
+  "d.xml": {
+    "ok": true,
+    "latex": [
+      "\\left\\{\\begin{array}{c}m+1  \\leq  2m-1\\\\m+1  >  5\\end{array}\\right."
+    ]
+  },
+  "d-np.xml": {
+    "ok": true,
+    "latex": [
+      "\\left(\\begin{array}{c}m+1  \\leq  2m-1\\\\m+1  >  5\\end{array}\\right]"
+    ]
+  },
+  "nobar.xml": {
+    "ok": true,
+    "latex": [
+      "\\left(x+a\\right)^{n}=\\sum_{k=0}^{n}\\left(\\genfrac{}{}{0pt}{}{n}{k}\\right)x^{k}a^{n-k}"
+    ]
+  },
+  "composite.xml": {
+    "ok": true,
+    "latex": [
+      "  \\mathit{f   \\left(  \\mathit{x   \\right)=  \\mathit{a   _{0}+\\sum_{  \\mathit{n   =1}^{  \\infty  }\\left(  \\mathit{a   _{  \\mathit{n   }\\cos(\\frac{  \\mathit{n   𝜋  \\mathit{x   }{  \\mathit{L   })+  \\mathit{b   _{  \\mathit{n   }\\sin(\\frac{  \\mathit{n   𝜋  \\mathit{x   }{  \\mathit{L   })\\right)"
+    ]
+  }
+}

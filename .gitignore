@@ -1,3 +1,12 @@
+# Node / TypeScript
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Reference forks cloned for cherry-picking (large; not part of the source)
+reference/fork-bazingarj/
+reference/fork-xavier/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

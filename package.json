@@ -1,0 +1,37 @@
+{
+  "name": "dwml-ts",
+  "version": "0.4.0",
+  "description": "Convert MS Office OMML (Office Math Markup Language) to LaTeX, ported to TypeScript with 100% fidelity",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib build",
+    "prepublishOnly": "npm run build && npm test",
+    "test": "rstest run",
+    "test:watch": "rstest",
+    "gen:unicode": "python scripts/gen_uni2latex.py",
+    "gen:groundtruth": "python scripts/gen_ground_truth.py"
+  },
+  "devDependencies": {
+    "@microsoft/api-extractor": "^7.58.12",
+    "@rslib/core": "^0.23.2",
+    "@rstest/core": "^0.7.4",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "txml": "^6.0.0"
+  }
+}
