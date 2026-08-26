@@ -151,6 +151,24 @@ describe('ommlNodeToLatex', () => {
     const node = parse(xml).find((n): n is import('txml').TNode => typeof n !== 'string')!;
     expect(ommlNodeToLatex(node)).toBe('\\frac{3}{8}');
   });
+
+  it('decodes XML entities in m:t when the caller did not ask txml to', async () => {
+    const { parse } = await import('txml');
+    const xml =
+      '<m:oMath>' +
+      '<m:f><m:fPr><m:type m:val="bar"/></m:fPr>' +
+      '<m:num><m:r><m:t>3</m:t></m:r></m:num>' +
+      '<m:den><m:r><m:t>8</m:t></m:r></m:den></m:f>' +
+      '<m:r><m:t>&lt;</m:t></m:r>' +
+      '<m:f><m:fPr><m:type m:val="bar"/></m:fPr>' +
+      '<m:num><m:r><m:t>5</m:t></m:r></m:num>' +
+      '<m:den><m:r><m:t>8</m:t></m:r></m:den></m:f>' +
+      '</m:oMath>';
+    const node = parse(xml, { keepWhitespace: true }).find(
+      (n): n is import('txml').TNode => typeof n !== 'string'
+    )!;
+    expect(ommlNodeToLatex(node)).toBe('\\frac{3}{8}<\\frac{5}{8}');
+  });
 });
 
 describe('unicode mapping', () => {

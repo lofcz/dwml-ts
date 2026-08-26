@@ -42,6 +42,7 @@
     "typescript": "^5.9.0"
   },
   "dependencies": {
+    "entities": "^8.0.0",
     "txml": "^6.0.0"
   }
 }

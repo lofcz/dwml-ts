@@ -11,6 +11,7 @@
  * without a DOM and without re-parsing.
  */
 
+import { decodeXML } from 'entities';
 import type { TNode } from 'txml/txml';
 import { unicodeToLatex } from './latex-encode';
 import {
@@ -68,7 +69,7 @@ function isElement(node: TNode | string): node is TNode {
 export function textContent(node: TNode): string {
   let out = '';
   for (const child of node.children) {
-    out += typeof child === 'string' ? child : textContent(child);
+    out += typeof child === 'string' ? decodeXML(child) : textContent(child);
   }
   return out;
 }
