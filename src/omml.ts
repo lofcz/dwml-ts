@@ -235,7 +235,7 @@ function findDescendantAttr(node: TNode, elemLocal: string, attrLocal: string): 
   return undefined;
 }
 
-const DIRECT_TAGS = new Set(['box', 'sSub', 'sSup', 'sSubSup', 'num', 'den', 'deg', 'e']);
+const DIRECT_TAGS = new Set(['box', 'sSub', 'sSup', 'sSubSup', 'num', 'den', 'deg', 'e', 'oMath', 'oMathPara']);
 class Converter {
   private unsupported = new Set<string>();
 
@@ -582,10 +582,26 @@ class Converter {
 const SUB_TEMPLATE = '_{{{0}}}';
 const SUP_TEMPLATE = '^{{{0}}}';
 
+function findLocal(node: TNode, name: string, acc: TNode[] = []): TNode[] {
+  if (localName(node.tagName) === name) acc.push(node);
+  for (const child of node.children) {
+    if (typeof child !== 'string') findLocal(child, name, acc);
+  }
+  return acc;
+}
+
 /**
  * Convert an already-parsed `oMath` (or oMath-like) node to bare LaTeX.
- * Never throws on unknown constructs.
+ * Unwraps `oMathPara` / `a14:m` so display math is not flattened to concatenated
+ * `m:t` text (`3/8` → `38`). Never throws on unknown constructs.
  */
 export function ommlNodeToLatex(node: TNode, options: OmmlToLatexOptions = {}): string {
+  const name = localName(node.tagName);
+  if (name === 'oMathPara' || name === 'm') {
+    const found = findLocal(node, 'oMath');
+    if (found.length) {
+      return found.map((omath) => new Converter(options).convert(omath)).join('').trim();
+    }
+  }
   return new Converter(options).convert(node);
 }

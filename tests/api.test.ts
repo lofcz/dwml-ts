@@ -138,6 +138,19 @@ describe('ommlNodeToLatex', () => {
     const omath = nodes.find((n): n is import('txml').TNode => typeof n !== 'string')!;
     expect(ommlNodeToLatex(omath)).toBe('x');
   });
+
+  it('unwraps oMathPara display fractions instead of concatenating digits', async () => {
+    const { parse } = await import('txml');
+    const xml =
+      '<m:oMathPara>' +
+      '<m:oMathParaPr><m:jc m:val="centerGroup"/></m:oMathParaPr>' +
+      '<m:oMath><m:f><m:fPr><m:type m:val="bar"/></m:fPr>' +
+      '<m:num><m:r><m:t>3</m:t></m:r></m:num>' +
+      '<m:den><m:r><m:t>8</m:t></m:r></m:den>' +
+      '</m:f></m:oMath></m:oMathPara>';
+    const node = parse(xml).find((n): n is import('txml').TNode => typeof n !== 'string')!;
+    expect(ommlNodeToLatex(node)).toBe('\\frac{3}{8}');
+  });
 });
 
 describe('unicode mapping', () => {
