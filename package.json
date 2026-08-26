@@ -1,6 +1,6 @@
 {
   "name": "dwml-ts",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Convert MS Office OMML (Office Math Markup Language) to LaTeX, ported to TypeScript with 100% fidelity",
   "license": "Apache-2.0",
   "repository": {
