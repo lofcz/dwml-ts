@@ -4,6 +4,7 @@ import {
   extractOmmlLatex,
   ommlNodeToLatex,
   escapeLatex,
+  unicodeToMathLatex,
 } from '../src/index';
 import { readFixture } from './fixtures';
 
@@ -185,5 +186,47 @@ describe('unicode mapping', () => {
 
   it('escapes latex-special chars in runs', () => {
     expect(ommlToLatex('<m:oMath><m:r><m:t>a%</m:t></m:r></m:oMath>')).toBe('a\\%');
+  });
+
+  it('keeps accented letters verbatim instead of emitting text-mode accents', () => {
+    // `\v{e}` / `\'e` / `\ss` are text-mode macros: invalid inside an equation
+    // and lossy on the way back to OMML. Unicode letters are valid math-mode
+    // identifiers for every downstream renderer.
+    const run = (t: string) => ommlToLatex(`<m:oMath><m:r><m:t>${t}</m:t></m:r></m:oMath>`);
+    expect(run('světlo')).toBe('světlo');
+    expect(run('Größe')).toBe('Größe');
+    expect(run('naïve café')).toBe('naïve café');
+    expect(run('ø æ ß Ł đ')).toBe('ø æ ß Ł đ');
+  });
+
+  it('keeps non-ASCII symbols outside the T table verbatim', () => {
+    const run = (t: string) => ommlToLatex(`<m:oMath><m:r><m:t>${t}</m:t></m:r></m:oMath>`);
+    expect(run('a – b — c')).toBe('a – b — c');
+    expect(run('5 €')).toBe('5 €');
+    expect(run('ℓ')).toBe('ℓ');
+    expect(run('"x"')).toBe('"x"');
+    expect(run('A•B')).toBe('A\\bullet B');
+  });
+
+  it('emits \\backslash for a literal backslash in run text', () => {
+    expect(ommlToLatex('<m:oMath><m:r><m:t>a\\b</m:t></m:r></m:oMath>')).toBe('a{\\backslash}b');
+  });
+
+  it('keeps the limit text of a labelled arrow renderable', () => {
+    const xml =
+      '<m:oMath><m:limUpp><m:e><m:r><m:t>→</m:t></m:r></m:e>' +
+      '<m:lim><m:r><m:t>světlo,chlorofyl</m:t></m:r></m:lim></m:limUpp></m:oMath>';
+    expect(ommlToLatex(xml)).toBe('\\overset{světlo,chlorofyl}{\\rightarrow }');
+  });
+});
+
+describe('unicodeToMathLatex', () => {
+  it('is the identity for everything but the backslash', () => {
+    expect(unicodeToMathLatex('světlo ∀x ≤ 5 €')).toBe('světlo ∀x ≤ 5 €');
+    expect(unicodeToMathLatex('a\\b')).toBe('a{\\backslash}b');
+  });
+
+  it('normalizes to NFC', () => {
+    expect(unicodeToMathLatex('e\u030C')).toBe('ě');
   });
 });

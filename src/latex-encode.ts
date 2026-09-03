@@ -40,3 +40,36 @@ export function unicodeToLatex(input: string): string {
   }
   return out;
 }
+
+/**
+ * ASCII characters that need a control sequence inside math mode. Everything
+ * else in ASCII is either a plain glyph or one of dwml's `CHARS`, which the
+ * caller escapes via `escapeLatex` after this pass.
+ */
+const ASCII_MATH: Readonly<Record<number, string>> = {
+  0x5c: '{\\backslash}',
+};
+
+/**
+ * Math-mode encoder for OMML run text (`m:t`).
+ *
+ * pylatexenc's map targets *text* mode: accented letters become `\v{e}` /
+ * `\'e` / `\ss`, symbols become `\textendash` / `\texteuro`, and math symbols
+ * are wrapped in `\ensuremath{}`. None of that is valid inside an equation —
+ * MathLive renders `\v{e}` as an error box and drops the accent when the
+ * LaTeX is converted back to MathML/OMML, so "světlo" round-trips as "svetlo".
+ *
+ * OMML is Unicode-native and every math renderer downstream (MathLive, KaTeX,
+ * unicode-math TeX, Office itself) accepts Unicode letters and symbols in
+ * math mode, so anything outside ASCII that dwml's curated `T` table did not
+ * already map is kept verbatim. Only `\` needs a control sequence.
+ */
+export function unicodeToMathLatex(input: string): string {
+  const s = String(input).normalize('NFC');
+  let out = '';
+  for (const ch of s) {
+    const cp = ch.codePointAt(0)!;
+    out += ASCII_MATH[cp] ?? ch;
+  }
+  return out;
+}

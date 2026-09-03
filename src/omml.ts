@@ -13,7 +13,7 @@
 
 import { decodeXML } from 'entities';
 import type { TNode } from 'txml/txml';
-import { unicodeToLatex } from './latex-encode';
+import { unicodeToMathLatex } from './latex-encode';
 import {
   CHARS,
   CHR,
@@ -538,7 +538,7 @@ class Converter {
    * Map a run's text to LaTeX. dwml's `T` dictionary is consulted first
    * (per Unicode code point) so Mathematical Alphanumeric Symbols and math
    * operators map to their clean ASCII / command forms; anything not in `T`
-   * falls back to the pylatexenc-derived encoder.
+   * goes through the math-mode encoder, which keeps Unicode verbatim.
    */
   private processUnicode(s: string): string {
     let out = '';
@@ -551,7 +551,7 @@ class Converter {
         // will prefix it with a backslash.
         out += ch;
       } else {
-        out += unicodeToLatex(ch);
+        out += unicodeToMathLatex(ch);
       }
     }
     return out;

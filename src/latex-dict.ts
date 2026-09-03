@@ -187,6 +187,7 @@ export const T: Record<string, string> = {
   '∗': '\\ast ',
   '∘': '\\circ ',
   '∙': '\\bullet ',
+  '•': '\\bullet ',
   '−': '-',
   '<': '<',
   '>': '>',

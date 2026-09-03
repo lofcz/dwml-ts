@@ -117,11 +117,19 @@ astral-plane Mathematical Alphanumeric Symbols are handled correctly):
    `U+1D400–U+1D7FF` → ASCII (`𝐴→A`, `𝑥→x`), Greek (`π→\pi`, both plain `U+03B1..` and
    math-italic `U+1D6FC..`), relation/operator symbols (`≤→\leq`, `≥→\geq`, `≠→\ne`,
    `·→\cdot`, `×→\times`, `∞→\infty`, `→→\rightarrow`, …).
-2. **pylatexenc's builtin map** (`src/uni2latex.generated.ts`, internalized from
-   pylatexenc 2.x, MIT) — everything else with a known LaTeX escape.
+2. **Verbatim Unicode** — everything else is kept as-is (`světlo` → `světlo`,
+   `€` → `€`). OMML is Unicode-native and math renderers (MathLive, KaTeX,
+   unicode-math) accept Unicode identifiers/symbols in math mode, whereas
+   text-mode escapes (`\v{e}`, `\ss`, `\textendash`, `\ensuremath{…}`) are invalid
+   inside an equation and lossy on the way back to OMML. A literal `\` becomes
+   `{\backslash}`.
 
 LaTeX-special characters in runs (`%`, `&`, `_`, `{`, `}`, `#`, `$`, `~`, `^`) are escaped
 via dwml's `escape_latex` (`a%` → `a\%`).
+
+`unicodeToLatex()` (the pylatexenc-derived *text-mode* encoder,
+`src/uni2latex.generated.ts`) is still exported for consumers that need it, but is
+no longer used for run text.
 
 ## Examples
 

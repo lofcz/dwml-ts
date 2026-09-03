@@ -24,7 +24,7 @@ import {
 } from './omml';
 
 export { ommlNodeToLatex, localName, escapeLatex, textContent } from './omml';
-export { unicodeToLatex } from './latex-encode';
+export { unicodeToLatex, unicodeToMathLatex } from './latex-encode';
 export type { OmmlToLatexOptions } from './omml';
 export type { TNode };
 
